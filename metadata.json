@@ -1,0 +1,6 @@
+{
+  "name": "HushCampus",
+  "description": "An interactive anonymous campus confession app featuring a feed, post detail, post creation modal, content moderation panel, and custom authentication screens.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
