@@ -48,7 +48,7 @@ export default function AuthScreen({ initialAuthType = 'login', onLoginSuccess }
     }
 
     const baseUrl = import.meta.env.VITE_API_URL || 'https://anonymousapp-bn6c.onrender.com';
-    const endpoint = `${baseUrl}/api/auth/student/${authType === 'signup' ? 'signup' : 'login'}`;
+    const endpoint = `${baseUrl}/api/auth/${authType === 'signup' ? 'student/signup' : 'login'}`;
     const payload = {
       email: email.trim(),
       password: password.trim(),
