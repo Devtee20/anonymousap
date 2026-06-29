@@ -35,7 +35,7 @@ export default function AuthScreen({ initialAuthType = 'login', onLoginSuccess }
     e.preventDefault();
 
     if (!email.trim()) {
-      toast.error('Please enter your campus email.');
+      toast.error('Please enter your login email or moderator ID.');
       return;
     }
 
@@ -137,14 +137,14 @@ export default function AuthScreen({ initialAuthType = 'login', onLoginSuccess }
             {/* Email input field */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-bold text-[#c9c4d8] uppercase tracking-wider ml-1">
-                University Email
+                Email or Moderator ID
               </label>
               <div className="relative group">
                 <input
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="student@university.edu"
+                  placeholder="student@university.edu or 123456"
                   className="w-full bg-[#0d1c2d] border border-white/10 rounded-xl px-4 py-3 text-sm text-[#d4e4fa] placeholder-[#c9c4d8]/40 focus:outline-none focus:border-[#cabeff] transition-all"
                 />
                 <Mail className="w-4 h-4 absolute right-3.5 top-3.5 text-[#c9c4d8]/40 group-focus-within:text-[#cabeff] transition-colors" />
