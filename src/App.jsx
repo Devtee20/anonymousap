@@ -58,7 +58,7 @@ export default function App() {
   const [loadingPosts, setLoadingPosts] = useState(false);
 
   const apiFetch = async (path, options = {}) => {
-    const baseUrl = import.meta.env.VITE_API_URL || 'https://anonymousapp-bn6c.onrender.com';
+    const baseUrl = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://anonymousapp-bn6c.onrender.com');
     const { token, headers: customHeaders, ...fetchOptions } = options;
     const headers = {
       'Content-Type': 'application/json',
