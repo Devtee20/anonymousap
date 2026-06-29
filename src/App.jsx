@@ -22,12 +22,14 @@ import ConfessionCard from './components/ConfessionCard';
 import ComposeModal from './components/ComposeModal';
 import AdminPanel from './components/AdminPanel';
 import AuthScreen from './components/AuthScreen';
+import LandingPage from './components/LandingPage';
 
 export default function App() {
   // Navigation & Core View States
-  const [view, setView] = useState('feed');
+  const [view, setView] = useState('landing');
   const [currentTab, setCurrentTab] = useState('home');
   const [selectedPostId, setSelectedPostId] = useState(null);
+  const [authMode, setAuthMode] = useState('login');
 
   // Interactive Modal state
   const [isComposeOpen, setIsComposeOpen] = useState(false);
@@ -37,6 +39,8 @@ export default function App() {
 
   // Auth Session state
   const [session, setSession] = useState(null);
+  const [adminMetrics, setAdminMetrics] = useState(null);
+  const [adminUsers, setAdminUsers] = useState([]);
 
   // Confessions and comment list master data
   const [posts, setPosts] = useState([]);
@@ -114,6 +118,7 @@ export default function App() {
       const safeSession = {
         accessToken: parsedSession.accessToken,
         isAdmin: parsedSession.isAdmin || false,
+        isSuperAdmin: parsedSession.isSuperAdmin || false,
         user: parsedSession.user || {
           email: parsedSession.email || 'guest@university.edu',
           displayName: parsedSession.displayName || 'Anonymous Guest',
@@ -122,7 +127,10 @@ export default function App() {
         }
       };
       setSession(safeSession);
-      setView('feed');
+      const role = safeSession.user?.role;
+      const shouldGoToAdmin = safeSession.isAdmin || role === 'moderator' || role === 'superadmin';
+      setView(shouldGoToAdmin ? 'admin' : 'feed');
+      setCurrentTab(shouldGoToAdmin ? 'admin' : 'home');
       loadPosts({ overrideToken: safeSession.accessToken, nextPage: 1, replace: true });
     } else {
       loadPosts({ nextPage: 1, replace: true });
@@ -135,25 +143,32 @@ export default function App() {
     setPosts((currentPosts) => currentPosts.map((post) => (post.id === updatedPost.id ? updatedPost : post)));
   };
 
-  const handleGuestLogin = async () => {
+  const loadAdminData = async () => {
+    if (!session?.isAdmin) return;
+
     try {
-      const result = await apiFetch('/api/auth/guest', { method: 'POST' });
-      handleLoginSuccess(result);
+      const metrics = await apiFetch('/api/admin/metrics');
+      setAdminMetrics(metrics);
+      if (session?.isSuperAdmin) {
+        const users = await apiFetch('/api/admin/users');
+        setAdminUsers(users);
+      }
     } catch (error) {
-      console.error('Guest login failed:', error);
-      handleLoginSuccess({
-        email: 'guest@university.edu',
-        displayName: 'Anonymous Guest',
-        avatarGradient: 'from-blue-500 to-indigo-500',
-        isAdmin: false
-      });
+      console.error('Admin data load error:', error);
     }
   };
+
+  useEffect(() => {
+    if (view === 'admin' && session?.isAdmin) {
+      loadAdminData();
+    }
+  }, [view, session?.accessToken]);
 
   const handleLoginSuccess = (sessionData) => {
     const safeSession = {
       accessToken: sessionData.accessToken,
       isAdmin: sessionData.user?.isAdmin || sessionData.isAdmin || false,
+      isSuperAdmin: sessionData.user?.isSuperAdmin || sessionData.isSuperAdmin || false,
       user: sessionData.user || {
         email: sessionData.email || 'guest@university.edu',
         displayName: sessionData.displayName || 'Anonymous Guest',
@@ -167,8 +182,10 @@ export default function App() {
 
     // Smooth loader entry Simulation to make the client look outstandingly polished!
     setIsLoading(true);
-    setView('feed');
-    setCurrentTab('home');
+    const role = safeSession.user?.role;
+    const shouldGoToAdmin = safeSession.isAdmin || role === 'moderator' || role === 'superadmin';
+    setView(shouldGoToAdmin ? 'admin' : 'feed');
+    setCurrentTab(shouldGoToAdmin ? 'admin' : 'home');
     setTimeout(() => {
       setIsLoading(false);
     }, 850);
@@ -320,6 +337,39 @@ export default function App() {
     }
   };
 
+  const handleCreateModerator = async ({ moderatorId, password }) => {
+    if (!session?.isSuperAdmin) {
+      alert('Only the super admin can create moderators.');
+      return;
+    }
+
+    try {
+      const result = await apiFetch('/api/admin/moderators', {
+        method: 'POST',
+        body: JSON.stringify({ moderatorId, password })
+      });
+      alert(result.message || 'Moderator created successfully.');
+      await loadAdminData();
+    } catch (error) {
+      alert(error.message || 'Unable to create moderator.');
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!session?.isSuperAdmin) {
+      alert('Only the super admin can delete users.');
+      return;
+    }
+
+    try {
+      await apiFetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+      setAdminUsers((currentUsers) => currentUsers.filter((user) => user._id !== userId));
+      alert('User deleted successfully.');
+    } catch (error) {
+      alert(error.message || 'Unable to delete user.');
+    }
+  };
+
   // Click on organic trend card text fills in composition helper
   const handleTrendingComposeFill = (textString) => {
     setIsComposeOpen(true);
@@ -384,6 +434,14 @@ export default function App() {
           if (targetView === 'feed') setCurrentTab('home');
           if (targetView === 'admin') setCurrentTab('admin');
         }}
+        onLogin={() => {
+          setAuthMode('login');
+          setView('auth');
+        }}
+        onSignup={() => {
+          setAuthMode('signup');
+          setView('auth');
+        }}
         onBackToFeed={() => {
           setView('feed');
           setSelectedPostId(null);
@@ -391,7 +449,6 @@ export default function App() {
         onOpenCompose={() => setIsComposeOpen(true)}
         session={session}
         onLogout={handleLogout}
-        onBrowseAsGuest={handleGuestLogin}
       />
 
       {/* Main Container Layout */}
@@ -408,8 +465,32 @@ export default function App() {
             className="w-full"
           >
             <AuthScreen
+              key={authMode}
+              initialAuthType={authMode}
               onLoginSuccess={handleLoginSuccess}
-              onSkip={handleGuestLogin}
+            />
+          </motion.div>
+        )}
+
+        {/* VIEW 0: LANDING PAGE FOR NEW VISITORS */}
+        {view === 'landing' && (
+          <motion.div
+            key="landing-view"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="w-full"
+          >
+            <LandingPage
+              onLogin={() => {
+                setAuthMode('login');
+                setView('auth');
+              }}
+              onSignup={() => {
+                setAuthMode('signup');
+                setView('auth');
+              }}
+              onExplore={() => setView('feed')}
             />
           </motion.div>
         )}
@@ -748,8 +829,13 @@ export default function App() {
           >
             <AdminPanel
               posts={posts}
+              metrics={adminMetrics}
+              users={adminUsers}
+              isSuperAdmin={session?.isSuperAdmin || false}
               onKeep={handleAdminKeep}
               onDelete={handleAdminDelete}
+              onCreateModerator={handleCreateModerator}
+              onDeleteUser={handleDeleteUser}
               onNavigateDetail={(id) => {
                 setSelectedPostId(id);
                 setView('detail');
@@ -786,7 +872,7 @@ export default function App() {
       />
 
       {/* Mobile viewports bottom persistent tabs bar */}
-      {view !== 'auth' && (
+      {view !== 'auth' && view !== 'landing' && (
         <BottomBar
           currentTab={currentTab}
           onTabChange={handleTabChange}

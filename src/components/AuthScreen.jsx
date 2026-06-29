@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Mail, Shield } from 'lucide-react';
 
-export default function AuthScreen({ onLoginSuccess, onSkip }) {
-  const [authType, setAuthType] = useState('login');
-  const [roleType, setRoleType] = useState('student');
+export default function AuthScreen({ initialAuthType = 'login', onLoginSuccess }) {
+  const [authType, setAuthType] = useState(initialAuthType);
+  const [roleType] = useState('student');
   const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    setAuthType(initialAuthType);
+  }, [initialAuthType]);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(true);
@@ -44,7 +48,7 @@ export default function AuthScreen({ onLoginSuccess, onSkip }) {
     }
 
     const baseUrl = import.meta.env.VITE_API_URL || 'https://anonymousapp-bn6c.onrender.com';
-    const endpoint = `${baseUrl}/api/auth/${roleType}/${authType}`;
+    const endpoint = `${baseUrl}/api/auth/student/${authType === 'signup' ? 'signup' : 'login'}`;
     const payload = {
       email: email.trim(),
       password: password.trim(),
@@ -107,30 +111,13 @@ export default function AuthScreen({ onLoginSuccess, onSkip }) {
           <div className="flex flex-col gap-3 min-h-[70px]">
             <div>
               <h1 className="text-2xl font-bold text-[#d4e4fa] tracking-tight">
-                {authType === 'login' ? `${roleType === 'student' ? 'Student' : 'Moderator'} Login` : `${roleType === 'student' ? 'Student' : 'Moderator'} Signup`}
+                {authType === 'login' ? 'Welcome Back' : 'Create Student Account'}
               </h1>
               <p className="text-xs text-[#c9c4d8] leading-relaxed">
                 {authType === 'login'
-                  ? `Sign in to your ${roleType} account and access the anonymous campus feed.`
-                  : `Create a ${roleType} account and connect securely with anonymous campus posts.`}
+                  ? 'Sign in with your campus credentials. Your role is validated on the server and you will be redirected to the correct dashboard.'
+                  : 'Create a student account to join the anonymous campus feed.'}
               </p>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setRoleType('student')}
-                className={`text-xs px-3 py-2 rounded-full transition-all ${roleType === 'student' ? 'bg-[#cabeff] text-[#32009a]' : 'bg-white/5 text-[#d4e4fa] hover:bg-white/10'}`}
-              >
-                Student
-              </button>
-              <button
-                type="button"
-                onClick={() => setRoleType('moderator')}
-                className={`text-xs px-3 py-2 rounded-full transition-all ${roleType === 'moderator' ? 'bg-[#cabeff] text-[#32009a]' : 'bg-white/5 text-[#d4e4fa] hover:bg-white/10'}`}
-              >
-                Moderator
-              </button>
             </div>
 
             <p className="text-[10px] text-[#c9c4d8]">
@@ -186,7 +173,7 @@ export default function AuthScreen({ onLoginSuccess, onSkip }) {
             </div>
 
             {/* Confirmation password signup list item */}
-            {authType === 'signup' && (
+            {authType === 'signup' && roleType === 'student' && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-[#c9c4d8] uppercase tracking-wider ml-1">
                   Confirm Password
@@ -205,7 +192,7 @@ export default function AuthScreen({ onLoginSuccess, onSkip }) {
             )}
 
             {/* Guideline checklist toggle */}
-            {authType === 'signup' && (
+            {authType === 'signup' && roleType === 'student' && (
               <div className="flex items-start gap-2.5 mt-1 px-1">
                 <input
                   type="checkbox"
@@ -230,10 +217,11 @@ export default function AuthScreen({ onLoginSuccess, onSkip }) {
           </form>
 
           <div className="text-[10px] text-[#c9c4d8] mb-4">
-            Use your campus email or register a new account to join the anonymous campus feed.
+            {authType === 'login'
+              ? 'Use the same form to sign in. Your role is verified on the server and you will be redirected automatically.'
+              : 'Student accounts can be created here. Moderators and super admins are created by the super admin from the dashboard.'}
           </div>
 
-          {/* Account tab selectors */}
           <div className="text-center pt-2 flex flex-col gap-2">
             <p className="text-xs text-[#c9c4d8]">
               {authType === 'login' ? "Don't have an account?" : 'Already a member?'}
@@ -245,16 +233,6 @@ export default function AuthScreen({ onLoginSuccess, onSkip }) {
                 {authType === 'login' ? 'Sign up' : 'Login'}
               </button>
             </p>
-            <div className="text-xs text-[#c9c4d8]/60 mt-1 border-t border-white/5 pt-2">
-              or{' '}
-              <button
-                type="button"
-                onClick={onSkip}
-                className="text-[#cabeff]/80 font-medium hover:underline hover:text-[#cabeff] cursor-pointer"
-              >
-                Continue as Guest
-              </button>
-            </div>
           </div>
 
         </div>

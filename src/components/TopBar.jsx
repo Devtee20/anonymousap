@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import { Shield, ArrowLeft, Bell, User, LogOut } from 'lucide-react';
+import { Shield, ArrowLeft, Bell, User, LogOut, Menu } from 'lucide-react';
 
 export default function TopBar({
   view,
   onNavigate,
+  onLogin,
+  onSignup,
   onOpenCompose,
   session,
   onLogout,
-  onBackToFeed,
-  onBrowseAsGuest
+  onBackToFeed
 }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   return (
     <header className="fixed top-0 w-full z-50 bg-[#122131] border-b border-white/15 h-16">
       <div className="flex items-center justify-between px-4 h-full w-full max-w-7xl mx-auto">
@@ -28,8 +30,12 @@ export default function TopBar({
           )}
 
           <div
-            onClick={() => onNavigate('feed')}
-            className="flex items-center gap-2 cursor-pointer group"
+            onClick={() => {
+              if (!session) {
+                onNavigate('landing');
+              }
+            }}
+            className={`flex items-center gap-2 ${!session ? 'cursor-pointer group' : 'cursor-default'}`}
           >
             <Shield className="w-6 h-6 text-[#cabeff] fill-[#cabeff]/10 group-hover:scale-105 transition-transform" />
             <h1 className="font-semibold text-xl tracking-tighter text-[#cabeff] flex items-center gap-2">
@@ -45,7 +51,53 @@ export default function TopBar({
 
         {/* Right Side: Operational Actions */}
         <div className="flex items-center gap-3">
-          {view === 'feed' && (
+          {!session ? (
+            <>
+              <div className="hidden min-[690px]:flex flex-wrap items-center gap-2">
+                <button
+                  onClick={onLogin}
+                  className="min-w-[5.5rem] whitespace-nowrap text-xs bg-white/5 hover:bg-white/10 text-[#d4e4fa] px-3 py-1.5 rounded-full transition-all cursor-pointer"
+                >
+                  Log In
+                </button>
+                <button
+                  onClick={onSignup}
+                  className="min-w-[5.5rem] whitespace-nowrap text-xs bg-[#cabeff] text-[#32009a] px-3 py-1.5 rounded-full transition-all hover:brightness-110 cursor-pointer"
+                >
+                  Sign Up
+                </button>
+              </div>
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="inline-flex min-[690px]:hidden items-center justify-center rounded-full border border-white/10 bg-white/5 p-2 text-[#d4e4fa] transition hover:bg-white/10 active:scale-95"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              {isMobileMenuOpen && (
+                <div className="absolute right-4 top-16 z-40 flex w-11/12 max-w-xs flex-col gap-2 rounded-2xl border border-white/10 bg-[#122131]/95 p-3 shadow-2xl shadow-black/40 backdrop-blur min-[690px]:hidden">
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onLogin();
+                    }}
+                    className="w-full rounded-full bg-white/5 px-4 py-3 text-left text-sm text-[#d4e4fa] hover:bg-white/10"
+                  >
+                    Log In
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onSignup();
+                    }}
+                    className="w-full rounded-full bg-[#cabeff] px-4 py-3 text-left text-sm font-semibold text-[#32009a] hover:brightness-110"
+                  >
+                    Sign Up
+                  </button>
+                </div>
+              )}
+            </>
+          ) : view === 'feed' && (
             <div className="flex items-center gap-2 relative">
               {session?.isAdmin && (
                 <button
@@ -60,7 +112,7 @@ export default function TopBar({
                   if (session) {
                     onOpenCompose();
                   } else {
-                    onNavigate('auth');
+                    onLogin();
                   }
                 }}
                 className="bg-[#cabeff] text-[#32009a] hover:bg-[#947dff] hover:text-white px-4 py-1.5 rounded-full font-semibold text-sm transition-all active:scale-95 cursor-pointer"
@@ -158,15 +210,6 @@ export default function TopBar({
                 </div>
               </div>
             </div>
-          )}
-
-          {view === 'auth' && (
-            <button
-              onClick={onBrowseAsGuest}
-              className="text-xs text-[#c9c4d8] hover:text-[#d4e4fa] underline cursor-pointer"
-            >
-              Browse as Guest
-            </button>
           )}
         </div>
 
