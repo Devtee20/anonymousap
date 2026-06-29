@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Mail, Shield } from 'lucide-react';
+import { User, Lock, Mail, Shield, Loader2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export default function AuthScreen({ initialAuthType = 'login', onLoginSuccess }) {
   const [authType, setAuthType] = useState(initialAuthType);
@@ -12,6 +13,7 @@ export default function AuthScreen({ initialAuthType = 'login', onLoginSuccess }
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [meshGradient, setMeshGradient] = useState('');
 
   // Atmospheric mouse tracking for the background mesh as requested in screen 5
@@ -33,17 +35,17 @@ export default function AuthScreen({ initialAuthType = 'login', onLoginSuccess }
     e.preventDefault();
 
     if (!email.trim()) {
-      alert('Please enter your campus email.');
+      toast.error('Please enter your campus email.');
       return;
     }
 
     if (!password.trim()) {
-      alert('Please enter your password.');
+      toast.error('Please enter your password.');
       return;
     }
 
     if (authType === 'signup' && password !== confirmPassword) {
-      alert('Passwords do not match!');
+      toast.error('Passwords do not match!');
       return;
     }
 
@@ -54,6 +56,8 @@ export default function AuthScreen({ initialAuthType = 'login', onLoginSuccess }
       password: password.trim(),
       ...(authType === 'signup' ? { confirmPassword: confirmPassword.trim() } : {})
     };
+
+    setIsSubmitting(true);
 
     try {
       const response = await fetch(endpoint, {
@@ -66,14 +70,17 @@ export default function AuthScreen({ initialAuthType = 'login', onLoginSuccess }
       const result = await response.json();
 
       if (!response.ok) {
-        alert(result.message || 'Authentication failed.');
+        toast.error(result.message || 'Authentication failed.');
         return;
       }
 
+      toast.success(authType === 'signup' ? 'Account created successfully.' : 'Signed in successfully.');
       onLoginSuccess(result);
     } catch (error) {
       console.error('Auth error:', error);
-      alert('Unable to reach the backend auth server.');
+      toast.error('Unable to reach the backend auth server.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -210,9 +217,11 @@ export default function AuthScreen({ initialAuthType = 'login', onLoginSuccess }
             {/* Form execution trigger */}
             <button
               type="submit"
-              className="w-full bg-[#cabeff] text-[#32009a] font-semibold text-sm py-3.5 rounded-xl mt-2 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-[#cabeff]/15 cursor-pointer"
+              disabled={isSubmitting}
+              className="w-full bg-[#cabeff] text-[#32009a] font-semibold text-sm py-3.5 rounded-xl mt-2 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-[#cabeff]/15 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {authType === 'login' ? 'Login' : 'Create Account'}
+              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {isSubmitting ? 'Please wait...' : authType === 'login' ? 'Login' : 'Create Account'}
             </button>
           </form>
 
