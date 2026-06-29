@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'react-toastify';
 import {
   Heart,
   ThumbsUp,
@@ -217,7 +218,7 @@ export default function App() {
       });
       updatePostState(updatedPost);
     } catch (error) {
-      alert(error.message || 'Unable to process vote.');
+      toast.error(error.message || 'Unable to process vote.');
       console.error(error);
     }
   };
@@ -231,7 +232,7 @@ export default function App() {
       });
       setPosts((currentPosts) => [newPost, ...currentPosts]);
     } catch (error) {
-      alert(error.message || 'Unable to post confession.');
+      toast.error(error.message || 'Unable to post confession.');
       console.error(error);
     }
   };
@@ -250,7 +251,7 @@ export default function App() {
       updatePostState(updatedPost);
       alert('Thank you. This confession has been flagged for review by campus moderators.');
     } catch (error) {
-      alert(error.message || 'Unable to report the confession.');
+      toast.error(error.message || 'Unable to report the confession.');
       console.error(error);
     }
   };
@@ -273,7 +274,7 @@ export default function App() {
       updatePostState(updatedPost);
       setCommentInput('');
     } catch (error) {
-      alert(error.message || 'Unable to add comment.');
+      toast.error(error.message || 'Unable to add comment.');
       console.error(error);
     }
   };
@@ -291,15 +292,17 @@ export default function App() {
       });
       updatePostState(updatedPost);
     } catch (error) {
-      alert(error.message || 'Unable to update comment like.');
+      toast.error(error.message || 'Unable to update comment like.');
       console.error(error);
     }
   };
 
   // Admin Keep Callback function
   const handleAdminKeep = async (postId) => {
-    if (!session?.isAdmin) {
-      alert('Moderator access is required to keep posts.');
+    const role = session?.user?.role;
+    const canModerate = session?.isAdmin || role === 'moderator' || role === 'superadmin';
+    if (!canModerate) {
+      toast.error('Moderator access is required to keep posts.');
       return;
     }
 
@@ -308,17 +311,19 @@ export default function App() {
         method: 'POST'
       });
       updatePostState(updatedPost);
-      alert('Post approved. Reports cleared.');
+      toast.success('Post approved. Reports cleared.');
     } catch (error) {
-      alert(error.message || 'Unable to approve post.');
+      toast.error(error.message || 'Unable to approve post.');
       console.error(error);
     }
   };
 
   // Admin Delete Callback function
   const handleAdminDelete = async (postId) => {
-    if (!session?.isAdmin) {
-      alert('Moderator access is required to delete posts.');
+    const role = session?.user?.role;
+    const canModerate = session?.isAdmin || role === 'moderator' || role === 'superadmin';
+    if (!canModerate) {
+      toast.error('Moderator access is required to delete posts.');
       return;
     }
 
@@ -331,15 +336,16 @@ export default function App() {
         setSelectedPostId(null);
         setView('feed');
       }
+      toast.success('Post deleted successfully.');
     } catch (error) {
-      alert(error.message || 'Unable to delete post.');
+      toast.error(error.message || 'Unable to delete post.');
       console.error(error);
     }
   };
 
   const handleCreateModerator = async ({ moderatorId, password }) => {
     if (!session?.isSuperAdmin) {
-      alert('Only the super admin can create moderators.');
+      toast.error('Only the super admin can create moderators.');
       return;
     }
 
@@ -348,25 +354,25 @@ export default function App() {
         method: 'POST',
         body: JSON.stringify({ moderatorId, password })
       });
-      alert(result.message || 'Moderator created successfully.');
+      toast.success(result.message || 'Moderator created successfully.');
       await loadAdminData();
     } catch (error) {
-      alert(error.message || 'Unable to create moderator.');
+      toast.error(error.message || 'Unable to create moderator.');
     }
   };
 
   const handleDeleteUser = async (userId) => {
     if (!session?.isSuperAdmin) {
-      alert('Only the super admin can delete users.');
+      toast.error('Only the super admin can delete users.');
       return;
     }
 
     try {
       await apiFetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
       setAdminUsers((currentUsers) => currentUsers.filter((user) => user._id !== userId));
-      alert('User deleted successfully.');
+      toast.success('User deleted successfully.');
     } catch (error) {
-      alert(error.message || 'Unable to delete user.');
+      toast.error(error.message || 'Unable to delete user.');
     }
   };
 
